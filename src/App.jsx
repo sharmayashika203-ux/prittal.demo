@@ -1,0 +1,1062 @@
+import React, { useState, useEffect } from 'react';
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
+import LogoSplitIntro from './components/LogoSplitIntro';
+import Navbar from './components/Navbar';
+import HeroSection from './components/HeroSection';
+import WhoIsThisForSection from './components/WhoIsThisForSection';
+import ServicesSection from './components/ServicesSection';
+import WorkSection, { blogPosts } from './components/WorkSection';
+import WhyPrittalTestimonials from './components/WhyPrittalTestimonials';
+import FaqSection from './components/FaqSection';
+import ContactDrawer from './components/ContactDrawer';
+import Footer from './components/Footer';
+import SideScrollNav from './components/SideScrollNav';
+import BlogPostPage from './components/BlogPostPage';
+import ServiceDetailPage from './components/ServiceDetailPage';
+import AboutUsPage from './components/AboutUsPage';
+import PortfolioApp from './portfolio/PortfolioApp';
+import PackageApp from './package/PackageApp';
+import FloatingWhatsApp from './components/FloatingWhatsApp';
+import PasswordGate from './components/PasswordGate';
+import NotFoundPage from './components/NotFoundPage';
+import ThankYouPage from './components/ThankYouPage';
+import { servicesData, getServiceById } from './data/servicesData';
+import { updateSEOTags, slugify } from './utils/seo';
+
+import { createAnimation, updateTransitionStyles } from './components/v1/skiper26';
+
+export default function App() {
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const [selectedServiceForContact, setSelectedServiceForContact] = useState(null);
+  const [skipIntro, setSkipIntro] = useState(false);
+  const [introKey, setIntroKey] = useState(0);
+  const [isNotFoundPage, setIsNotFoundPage] = useState(false);
+  const [portfolioAuth, setPortfolioAuth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('prittal_auth_portfolio') === 'true';
+    }
+    return false;
+  });
+  const [packageAuth, setPackageAuth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('prittal_auth_package') === 'true';
+    }
+    return false;
+  });
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const version = localStorage.getItem('prittal-theme-default-v5');
+      if (!version) {
+        localStorage.setItem('prittal-theme', 'dark');
+        localStorage.setItem('portfolio-theme', 'dark');
+        localStorage.setItem('prittal-theme-default-v5', 'true');
+        return true;
+      }
+      const saved = localStorage.getItem('prittal-theme');
+      if (saved === 'light') return false;
+      if (saved === 'dark') return true;
+    }
+    return true;
+  });
+  const [selectedBlogArticle, setSelectedBlogArticle] = useState(null);
+  const [selectedServicePage, setSelectedServicePage] = useState(null);
+  const [isAboutPage, setIsAboutPage] = useState(false);
+  const [isPortfolioPage, setIsPortfolioPage] = useState(false);
+  const [isPackagePage, setIsPackagePage] = useState(false);
+  const [isThankYouPage, setIsThankYouPage] = useState(false);
+
+  // Ensure dark class is applied to document root on mount & update
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add('dark');
+      root.classList.remove('light');
+      root.setAttribute('data-theme', 'dark');
+    } else {
+      root.classList.remove('dark');
+      root.classList.add('light');
+      root.setAttribute('data-theme', 'light');
+    }
+    localStorage.setItem('prittal-theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+
+  const handleOpenContact = (serviceName) => {
+    if (typeof serviceName === 'string') {
+      setSelectedServiceForContact(serviceName);
+    } else {
+      setSelectedServiceForContact(null);
+    }
+    setIsContactOpen(true);
+  };
+
+  // Detect Mac devices and apply 110% zoom class
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isMac = /Mac|Macintosh|MacIntel|MacPPC|Mac68K/i.test(navigator.userAgent) ||
+                    (navigator.platform && navigator.platform.indexOf('Mac') >= 0);
+      if (isMac) {
+        document.documentElement.classList.add('mac-device');
+      }
+    }
+  }, []);
+
+  // Initialize Fast & Ultra-Smooth Lenis Scroll
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 0.9,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1.2,
+      touchMultiplier: 2.0,
+      lerp: 0.12,
+    });
+
+    let animationFrameId;
+
+    function raf(time) {
+      lenis.raf(time);
+      animationFrameId = requestAnimationFrame(raf);
+    }
+
+    animationFrameId = requestAnimationFrame(raf);
+    window.lenis = lenis;
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      lenis.destroy();
+      window.lenis = null;
+    };
+  }, []);
+
+  // SEO Route Handlers & Navigation
+  const navigateToNotFound = (push = true) => {
+    setSkipIntro(true);
+    setSelectedServicePage(null);
+    setSelectedBlogArticle(null);
+    setIsAboutPage(false);
+    setIsPortfolioPage(false);
+    setIsPackagePage(false);
+    setIsThankYouPage(false);
+    setIsNotFoundPage(true);
+
+    const path = typeof window !== 'undefined' ? window.location.pathname : '/404';
+
+    if (push && typeof window !== 'undefined' && window.location.pathname !== '/404') {
+      window.history.pushState({ type: '404' }, '', '/404');
+    }
+
+    updateSEOTags({
+      title: '404 — Page Not Found | Prittal Creative Agency',
+      description: 'The page you are looking for does not exist or has been moved.',
+      path: path,
+      type: 'website',
+      noIndex: true
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.lenis) window.lenis.scrollTo(0, { duration: 0.8 });
+  };
+
+  const navigateToThankYou = (push = true) => {
+    setSkipIntro(true);
+    setSelectedServicePage(null);
+    setSelectedBlogArticle(null);
+    setIsAboutPage(false);
+    setIsPortfolioPage(false);
+    setIsPackagePage(false);
+    setIsNotFoundPage(false);
+    setIsThankYouPage(true);
+
+    const path = '/thank-you';
+
+    if (push && typeof window !== 'undefined' && window.location.pathname !== '/thank-you') {
+      window.history.pushState({ type: 'thank-you' }, '', path);
+    }
+
+    updateSEOTags({
+      title: 'Thank You — Inquiry Received | Prittal Creative Agency',
+      description: 'Thank you for reaching out to Prittal. Our senior strategy team will review your project brief and respond shortly.',
+      path: path,
+      type: 'website',
+      noIndex: true
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.lenis) window.lenis.scrollTo(0, { duration: 0.8 });
+  };
+
+  const navigateToPackage = (push = true) => {
+    setSkipIntro(true);
+    setSelectedServicePage(null);
+    setSelectedBlogArticle(null);
+    setIsAboutPage(false);
+    setIsPortfolioPage(false);
+    setIsNotFoundPage(false);
+    setIsThankYouPage(false);
+    setIsPackagePage(true);
+    const path = '/package';
+
+    if (push && typeof window !== 'undefined' && !window.location.pathname.startsWith('/package')) {
+      window.history.pushState({ type: 'package' }, '', path);
+    }
+
+    updateSEOTags({
+      title: 'Packages & Pricing | Prittal Creative Agency',
+      description: 'Explore tailored packages for Website Development, SEO, Social Media Marketing, Paid Campaigns, Product Shoots, and Google My Business.',
+      path: path,
+      type: 'website',
+      noIndex: true
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.lenis) window.lenis.scrollTo(0, { duration: 0.8 });
+  };
+
+  const navigateToPortfolio = (push = true) => {
+    setSkipIntro(true);
+    setSelectedServicePage(null);
+    setSelectedBlogArticle(null);
+    setIsAboutPage(false);
+    setIsPackagePage(false);
+    setIsNotFoundPage(false);
+    setIsPortfolioPage(true);
+    const path = '/portfolio';
+
+    if (push && typeof window !== 'undefined' && !window.location.pathname.startsWith('/portfolio')) {
+      window.history.pushState({ type: 'portfolio' }, '', path);
+    }
+
+    updateSEOTags({
+      title: 'Our Work & Portfolio | Prittal Creative Agency',
+      description: 'Explore our comprehensive portfolio of branding, performance campaigns, video productions, websites, and AI creative solutions for leading brands.',
+      path: path,
+      type: 'website'
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.lenis) window.lenis.scrollTo(0, { duration: 0.8 });
+  };
+
+  const navigateToAbout = (push = true) => {
+    setSkipIntro(true);
+    setSelectedServicePage(null);
+    setSelectedBlogArticle(null);
+    setIsPortfolioPage(false);
+    setIsPackagePage(false);
+    setIsNotFoundPage(false);
+    setIsAboutPage(true);
+    const path = '/about-us';
+
+    if (push && typeof window !== 'undefined' && window.location.pathname !== path) {
+      window.history.pushState({ type: 'about' }, '', path);
+    }
+
+    updateSEOTags({
+      title: 'Best Branding Firm & Creative Agency | Prittal',
+      description: 'Prittal is a premier branding firm in USA, UAE & India. Recognized among the best creative agencies for strategic brand identity design & business growth.',
+      path: path,
+      type: 'website'
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.lenis) window.lenis.scrollTo(0, { duration: 0.8 });
+  };
+
+  const navigateToServices = (push = true) => {
+    setSkipIntro(true);
+    setSelectedServicePage(null);
+    setSelectedBlogArticle(null);
+    setIsAboutPage(false);
+    setIsPortfolioPage(false);
+    setIsPackagePage(false);
+    setIsNotFoundPage(false);
+    setIsThankYouPage(false);
+    const path = '/services';
+
+    if (push && typeof window !== 'undefined' && window.location.pathname !== path) {
+      window.history.pushState({ type: 'services' }, '', path);
+    }
+
+    updateSEOTags({
+      title: 'Digital Growth Solutions & Strategy | Scale Online | Prittal',
+      description: 'Discover how to scale a business online with Prittal. We deliver custom business growth strategy and digital growth solutions to transform clicks into revenue.',
+      path: path,
+      type: 'website'
+    });
+
+    setTimeout(() => {
+      const el = document.getElementById('services');
+      if (el) {
+        if (window.lenis) window.lenis.scrollTo(el, { offset: 0, duration: 0.8 });
+        else el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  const navigateToWork = (push = true) => {
+    setSkipIntro(true);
+    setSelectedServicePage(null);
+    setSelectedBlogArticle(null);
+    setIsAboutPage(false);
+    setIsPortfolioPage(false);
+    setIsPackagePage(false);
+    setIsNotFoundPage(false);
+    setIsThankYouPage(false);
+    const path = '/work';
+
+    if (push && typeof window !== 'undefined' && window.location.pathname !== path) {
+      window.history.pushState({ type: 'work' }, '', path);
+    }
+
+    updateSEOTags({
+      title: 'Work & Insights — Prittal Creative Agency',
+      description: 'Explore our client work, case studies, strategic insights, and proven performance growth results.',
+      path: path,
+      type: 'website'
+    });
+
+    setTimeout(() => {
+      const el = document.getElementById('work');
+      if (el) {
+        if (window.lenis) window.lenis.scrollTo(el, { offset: 0, duration: 0.8 });
+        else el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  const navigateToWhoFor = (push = true) => {
+    setSkipIntro(true);
+    setSelectedServicePage(null);
+    setSelectedBlogArticle(null);
+    setIsAboutPage(false);
+    setIsPortfolioPage(false);
+    setIsPackagePage(false);
+    setIsNotFoundPage(false);
+    setIsThankYouPage(false);
+    const path = '/who-for';
+
+    if (push && typeof window !== 'undefined' && window.location.pathname !== path) {
+      window.history.pushState({ type: 'who-for' }, '', path);
+    }
+
+    updateSEOTags({
+      title: 'Choose Your Stage — Prittal Creative Agency',
+      description: 'Whether starting from scratch, increasing visibility, or scaling up, find the exact strategic roadmap for your brand stage.',
+      path: path,
+      type: 'website'
+    });
+
+    setTimeout(() => {
+      const el = document.getElementById('who-for');
+      if (el) {
+        if (window.lenis) window.lenis.scrollTo(el, { offset: 0, duration: 0.8 });
+        else el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  const navigateToService = (service, push = true) => {
+    setSkipIntro(true);
+    setSelectedBlogArticle(null);
+    setIsAboutPage(false);
+    setIsPortfolioPage(false);
+    setIsPackagePage(false);
+    setIsNotFoundPage(false);
+    setSelectedServicePage(service);
+    const path = `/services/${service.slug || service.id}`;
+    
+    if (push && typeof window !== 'undefined' && window.location.pathname !== path) {
+      window.history.pushState({ type: 'service', id: service.id }, '', path);
+    } else if (!push && typeof window !== 'undefined' && window.location.pathname !== path) {
+      window.history.replaceState({ type: 'service', id: service.id }, '', path);
+    }
+
+    updateSEOTags({
+      title: service.metaTitle || `${service.displayTitle || service.title} Services — Prittal`,
+      description: service.metaDescription || service.lede || service.desc,
+      path: path,
+      type: 'website',
+      schemaData: {
+        '@context': 'https://schema.org',
+        '@type': 'Service',
+        name: service.displayTitle || service.title,
+        serviceType: service.badge || service.title,
+        provider: {
+          '@type': 'Organization',
+          name: 'Prittal Creative Agency',
+          url: typeof window !== 'undefined' ? window.location.origin : 'https://prittal.com'
+        },
+        description: service.lede,
+        hasOfferCatalog: {
+          '@type': 'OfferCatalog',
+          name: 'Core Capabilities',
+          itemListElement: service.capabilities.map(c => ({
+            '@type': 'Offer',
+            itemOffered: {
+              '@type': 'Service',
+              name: c.title,
+              description: c.desc
+            }
+          }))
+        }
+      }
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const navigateToArticle = (article, push = true) => {
+    setSkipIntro(true);
+    setSelectedServicePage(null);
+    setIsAboutPage(false);
+    setIsPortfolioPage(false);
+    setIsPackagePage(false);
+    setIsNotFoundPage(false);
+    setSelectedBlogArticle(article);
+    const slug = article.slug || slugify(article.title);
+    const path = `/insights/${slug}`;
+
+    if (push && typeof window !== 'undefined' && window.location.pathname !== path) {
+      window.history.pushState({ type: 'article', id: article.id, slug: slug }, '', path);
+    }
+
+    updateSEOTags({
+      title: `${article.title} — Prittal Insights`,
+      description: article.teaser || article.title,
+      path: path,
+      type: 'article',
+      schemaData: {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: article.title,
+        description: article.teaser,
+        author: {
+          '@type': 'Organization',
+          name: article.author || 'Prittal Strategy Team'
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Prittal Creative Agency',
+          url: typeof window !== 'undefined' ? window.location.origin : 'https://prittal.com'
+        },
+        datePublished: '2026-08-01'
+      }
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const navigateToHome = (href = '#', push = true) => {
+    setSkipIntro(true);
+    setSelectedServicePage(null);
+    setSelectedBlogArticle(null);
+    setIsAboutPage(false);
+    setIsPortfolioPage(false);
+    setIsPackagePage(false);
+    setIsNotFoundPage(false);
+
+    if (push && typeof window !== 'undefined' && window.location.pathname !== '/') {
+      window.history.pushState(null, '', '/' + (href && href !== '#' && !href.startsWith('/') ? href : ''));
+    }
+
+    updateSEOTags({
+      title: 'Brand Strategy & Business Growth Agency | Prittal',
+      description: 'Prittal is a premier branding agency & brand identity agency. As your creative agency partner, we build strategies and identities that scale your business.',
+      path: '/'
+    });
+
+    setTimeout(() => {
+      if (!href || href === '#' || href === '#hero') {
+        if (window.lenis) window.lenis.scrollTo(0, { duration: 0.8 });
+        else window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      const targetId = href.startsWith('#') ? href.substring(1) : href;
+      const el = document.getElementById(targetId);
+      if (el) {
+        if (window.lenis) window.lenis.scrollTo(el, { offset: 0, duration: 0.8 });
+        else el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 150);
+  };
+
+  const handleGlobalNavigation = (href) => {
+    if (!href) {
+      navigateToHome('#', true);
+      return;
+    }
+    if (href === '/thank-you' || href === 'thank-you' || href === '#thank-you' || href.startsWith('/thank-you')) {
+      navigateToThankYou(true);
+      return;
+    }
+    if (href === '/404' || href === '404' || href === '#404') {
+      navigateToNotFound(true);
+      return;
+    }
+    if (
+      href === '/portfolio' ||
+      href === '/portfolio/' ||
+      href === '#portfolio' ||
+      href === 'portfolio'
+    ) {
+      navigateToPortfolio(true);
+      return;
+    }
+    if (
+      href === '/about-us' ||
+      href === '/about' ||
+      href === '#about-us' ||
+      href === '#about' ||
+      href === 'about-us' ||
+      href === 'about' ||
+      href === 'who-we-are' ||
+      href === '/who-we-are' ||
+      href === 'why-prittal' ||
+      href === '/why-prittal' ||
+      href === '#why-prittal'
+    ) {
+      navigateToAbout(true);
+      return;
+    }
+    if (
+      href === '/package' ||
+      href === '/packages' ||
+      href === '/package/' ||
+      href === '/packages/' ||
+      href === 'package' ||
+      href === 'packages' ||
+      href === '#package' ||
+      href === '#packages'
+    ) {
+      navigateToPackage(true);
+      return;
+    }
+    if (
+      href === '/services' ||
+      href === '/services/' ||
+      href === 'services' ||
+      href === '#services'
+    ) {
+      navigateToServices(true);
+      return;
+    }
+    if (
+      href === '/work' ||
+      href === '/work/' ||
+      href === 'work' ||
+      href === '#work'
+    ) {
+      navigateToWork(true);
+      return;
+    }
+    if (
+      href === '/who-for' ||
+      href === '/who-for/' ||
+      href === 'who-for' ||
+      href === '#who-for'
+    ) {
+      navigateToWhoFor(true);
+      return;
+    }
+    if (href.startsWith('/services/')) {
+      const slug = href.replace('/services/', '').replace(/\/$/, '');
+      const found = getServiceById(slug);
+      if (found) {
+        navigateToService(found, true);
+        return;
+      } else {
+        navigateToNotFound(true);
+        return;
+      }
+    }
+    if (href.startsWith('/insights/') || href.startsWith('/blog/')) {
+      const identifier = href.replace('/insights/', '').replace('/blog/', '').replace(/\/$/, '');
+      const found = blogPosts.find(
+        b => (b.slug && b.slug.toLowerCase() === identifier.toLowerCase()) ||
+             (b.title && slugify(b.title) === identifier.toLowerCase()) ||
+             b.id.toLowerCase() === identifier.toLowerCase()
+      );
+      if (found) {
+        navigateToArticle(found, true);
+        return;
+      } else {
+        navigateToNotFound(true);
+        return;
+      }
+    }
+    if (href === '/' || href === '#' || href.startsWith('#')) {
+      navigateToHome(href, true);
+      return;
+    }
+
+    // Any other unrecognized route -> open 404 page
+    if (href.startsWith('/')) {
+      navigateToNotFound(true);
+      return;
+    }
+
+    navigateToHome(href, true);
+  };
+
+  // Synchronize router state with browser URL & handle Back/Forward buttons
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const syncRoute = (isInitial = false) => {
+      // 1. Sanitize query parameters (Prittal uses clean REST paths only)
+      const hasQuery = Boolean(typeof window !== 'undefined' && window.location.search);
+      if (hasQuery) {
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState(window.history.state, '', cleanUrl);
+      }
+
+      const pathname = window.location.pathname.replace(/\/+/g, '/');
+      const hash = window.location.hash;
+
+      // Handle /portfolio route
+      if (
+        pathname === '/portfolio' ||
+        pathname === '/portfolio/'
+      ) {
+        navigateToPortfolio(false);
+        return;
+      }
+
+      // Handle /package or /packages route
+      if (
+        pathname === '/package' ||
+        pathname === '/packages' ||
+        pathname === '/package/' ||
+        pathname === '/packages/'
+      ) {
+        navigateToPackage(false);
+        return;
+      }
+
+      // Handle /about-us, /about, /why-prittal or /who-we-are route
+      if (
+        pathname === '/about-us' ||
+        pathname === '/about' ||
+        pathname === '/why-prittal' ||
+        pathname === '/who-we-are' ||
+        pathname === '/about-us/' ||
+        pathname === '/about/' ||
+        pathname === '/why-prittal/' ||
+        pathname === '/who-we-are/'
+      ) {
+        navigateToAbout(false);
+        return;
+      }
+
+      // Handle /services route
+      if (pathname === '/services' || pathname === '/services/') {
+        navigateToServices(false);
+        return;
+      }
+
+      // Handle /work route
+      if (pathname === '/work' || pathname === '/work/') {
+        navigateToWork(false);
+        return;
+      }
+
+      // Handle /who-for route
+      if (pathname === '/who-for' || pathname === '/who-for/') {
+        navigateToWhoFor(false);
+        return;
+      }
+
+      // Handle /services/:slug route
+      if (pathname.startsWith('/services/')) {
+        const slug = pathname.replace('/services/', '').replace(/\/$/, '');
+        const found = getServiceById(slug);
+        if (found) {
+          navigateToService(found, false);
+          return;
+        }
+      }
+
+      // Handle /insights/:slug or /blog/:slug route (matches heading slug or legacy id)
+      if (pathname.startsWith('/insights/') || pathname.startsWith('/blog/')) {
+        const identifier = pathname.replace('/insights/', '').replace('/blog/', '').replace(/\/$/, '');
+        const found = blogPosts.find(
+          b => (b.slug && b.slug.toLowerCase() === identifier.toLowerCase()) ||
+               (b.title && slugify(b.title) === identifier.toLowerCase()) ||
+               b.id.toLowerCase() === identifier.toLowerCase()
+        );
+        if (found) {
+          navigateToArticle(found, false);
+          return;
+        }
+      }
+
+      // Handle /thank-you route
+      if (pathname === '/thank-you' || pathname === '/thank-you/') {
+        navigateToThankYou(false);
+        return;
+      }
+
+      // Handle /404 route
+      if (pathname === '/404' || pathname === '/404/') {
+        navigateToNotFound(false);
+        return;
+      }
+
+      // Handle root '/'
+      if (pathname === '/' || pathname === '') {
+        setIsNotFoundPage(false);
+        setIsThankYouPage(false);
+        setSelectedServicePage(null);
+        setSelectedBlogArticle(null);
+        setIsAboutPage(false);
+        setIsPortfolioPage(false);
+        setIsPackagePage(false);
+
+        updateSEOTags({
+          title: 'Brand Strategy & Business Growth Agency | Prittal',
+          description: 'Prittal is a premier branding agency & brand identity agency. As your creative agency partner, we build strategies and identities that scale your business.',
+          path: '/',
+          noIndex: hasQuery
+        });
+
+        if (isInitial && hash) {
+          setTimeout(() => {
+            const el = document.getElementById(hash.substring(1));
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }, 400);
+        }
+        return;
+      }
+
+      // Any unrecognized route (e.g. /random-page, /abc, /invalid) -> render 404 page
+      navigateToNotFound(false);
+    };
+
+    syncRoute(true);
+
+    const onPopState = () => syncRoute(false);
+    window.addEventListener('popstate', onPopState);
+
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextDark = !isDark;
+    try {
+      const anim = createAnimation("polygon", "top-left", true);
+      updateTransitionStyles(anim.css);
+    } catch (e) {
+      // Graceful fallback if animations are unavailable
+    }
+
+    const applySwitch = () => {
+      setIsDark(nextDark);
+      const root = document.documentElement;
+      if (nextDark) {
+        root.classList.add('dark');
+        root.classList.remove('light');
+        root.setAttribute('data-theme', 'dark');
+      } else {
+        root.classList.remove('dark');
+        root.classList.add('light');
+        root.setAttribute('data-theme', 'light');
+      }
+      localStorage.setItem('prittal-theme', nextDark ? 'dark' : 'light');
+      localStorage.setItem('portfolio-theme', nextDark ? 'dark' : 'light');
+    };
+
+    if (typeof document !== 'undefined' && document.startViewTransition) {
+      try {
+        document.startViewTransition(applySwitch);
+      } catch (e) {
+        applySwitch();
+      }
+    } else {
+      applySwitch();
+    }
+  };
+
+  const handleReplayIntro = () => {
+    setSelectedBlogArticle(null);
+    setSelectedServicePage(null);
+    setIsAboutPage(false);
+    setIsPortfolioPage(false);
+    setIsPackagePage(false);
+    setIsNotFoundPage(false);
+    setIsThankYouPage(false);
+    setSkipIntro(false);
+    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+      window.history.pushState(null, '', '/');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setIntroKey(prev => prev + 1);
+  };
+
+  const handleSkipIntro = () => {
+    setSkipIntro(true);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  };
+
+  // If Thank You page is active, show full ThankYouPage view
+  if (isThankYouPage) {
+    return (
+      <>
+        <ThankYouPage
+          onNavigateHome={() => navigateToHome('#', true)}
+          onNavigate={handleGlobalNavigation}
+          onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+          onReplayIntro={handleReplayIntro}
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+        />
+        <ContactDrawer
+          isOpen={isContactOpen}
+          onClose={() => setIsContactOpen(false)}
+          initialService={selectedServiceForContact}
+          isDark={isDark}
+          onNavigate={handleGlobalNavigation}
+        />
+        <FloatingWhatsApp onOpenContact={handleOpenContact} />
+      </>
+    );
+  }
+
+  // If 404 Page Not Found is active, show full NotFoundPage view
+  if (isNotFoundPage) {
+    return (
+      <>
+        <NotFoundPage
+          onNavigateHome={() => navigateToHome('#', true)}
+          onExploreWork={() => navigateToHome('#work', true)}
+          onNavigate={handleGlobalNavigation}
+          onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+          onReplayIntro={handleReplayIntro}
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+        />
+        <ContactDrawer
+          isOpen={isContactOpen}
+          onClose={() => setIsContactOpen(false)}
+          initialService={selectedServiceForContact}
+          isDark={isDark}
+          onNavigate={handleGlobalNavigation}
+        />
+        <FloatingWhatsApp onOpenContact={handleOpenContact} />
+      </>
+    );
+  }
+
+  // If Package page is selected, show full page Package view if authenticated
+  if (isPackagePage) {
+    if (!packageAuth) {
+      return (
+        <PasswordGate
+          pageTitle="Packages & Pricing"
+          pageType="package"
+          onAuthenticated={() => setPackageAuth(true)}
+          onGoHome={() => navigateToHome('#', true)}
+        />
+      );
+    }
+    return (
+      <PackageApp
+        onNavigateHome={() => navigateToHome('#', true)}
+        onNavigate={handleGlobalNavigation}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+      />
+    );
+  }
+
+  // If Portfolio page is selected, show full page Portfolio view if authenticated
+  if (isPortfolioPage) {
+    if (!portfolioAuth) {
+      return (
+        <PasswordGate
+          pageTitle="Work & Portfolio"
+          pageType="portfolio"
+          onAuthenticated={() => setPortfolioAuth(true)}
+          onGoHome={() => navigateToHome('#', true)}
+        />
+      );
+    }
+    return (
+      <PortfolioApp
+        onNavigateHome={() => navigateToHome('#', true)}
+        onNavigate={handleGlobalNavigation}
+        isDarkTheme={isDark}
+      />
+    );
+  }
+
+  // If About Us page is selected, show full page About Us view
+  if (isAboutPage) {
+    return (
+      <>
+        <AboutUsPage
+          onBack={() => navigateToHome('#', true)}
+          onNavigate={handleGlobalNavigation}
+          onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+        />
+        <ContactDrawer
+          isOpen={isContactOpen}
+          onClose={() => setIsContactOpen(false)}
+          initialService={selectedServiceForContact}
+          isDark={isDark}
+          onNavigate={handleGlobalNavigation}
+        />
+        <FloatingWhatsApp onOpenContact={handleOpenContact} />
+      </>
+    );
+  }
+
+  // If a dedicated service page is selected, show full page service view with clean URL
+  if (selectedServicePage) {
+    return (
+      <>
+        <ServiceDetailPage
+          service={selectedServicePage}
+          onSelectService={(newService) => navigateToService(newService, true)}
+          onNavigate={handleGlobalNavigation}
+          onBack={() => handleGlobalNavigation('/services')}
+          onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+        />
+        <ContactDrawer
+          isOpen={isContactOpen}
+          onClose={() => setIsContactOpen(false)}
+          initialService={selectedServiceForContact}
+          isDark={isDark}
+          onNavigate={handleGlobalNavigation}
+        />
+        <FloatingWhatsApp onOpenContact={handleOpenContact} />
+      </>
+    );
+  }
+
+  // If a blog article is selected, show full page blog article view with clean URL
+  if (selectedBlogArticle) {
+    return (
+      <>
+        <BlogPostPage
+          article={selectedBlogArticle}
+          allArticles={blogPosts}
+          onSelectArticle={(newArticle) => navigateToArticle(newArticle, true)}
+          onNavigate={handleGlobalNavigation}
+          onBack={() => handleGlobalNavigation('/work')}
+          onOpenContact={() => setIsContactOpen(true)}
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+        />
+        <ContactDrawer
+          isOpen={isContactOpen}
+          onClose={() => setIsContactOpen(false)}
+          initialService={selectedServiceForContact}
+          isDark={isDark}
+          onNavigate={handleGlobalNavigation}
+        />
+        <FloatingWhatsApp onOpenContact={handleOpenContact} />
+      </>
+    );
+  }
+
+  const AgencyWebsiteContent = (
+    <div className={`min-h-screen flex flex-col justify-between selection:bg-[#00afc8] selection:text-[#fff6f1] font-montserrat relative transition-colors duration-300 ${
+      isDark ? 'bg-black text-[#fff6f1]' : 'bg-[#F8F8F6] text-[#003E4D]'
+    }`}>
+      <Navbar
+        onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+        onReplayIntro={handleReplayIntro}
+        onNavigate={handleGlobalNavigation}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+      />
+
+      {/* Floating Right-Side Navigation Rail */}
+      <SideScrollNav onOpenContact={(serviceName) => handleOpenContact(serviceName)} />
+
+      <main className="flex-1 relative lg:snap-container">
+        {/* FOLD 1: Editorial Hero Section */}
+        <HeroSection
+          onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+          onExploreWork={() => handleGlobalNavigation('/work')}
+        />
+
+        {/* FOLD 2: Social Proof + "Who Is This For" Situation Cards */}
+        <WhoIsThisForSection
+          onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+          onExploreWork={() => handleGlobalNavigation('/work')}
+          onNavigate={handleGlobalNavigation}
+        />
+
+        {/* FOLD 3: Services Overview (6 Service Cards) */}
+        <ServicesSection
+          onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+          onSelectService={(service) => navigateToService(service, true)}
+        />
+
+        {/* FOLD 4: Impact Numbers + Blog & Insights Showcase */}
+        <WorkSection
+          onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+          onSelectArticle={(article) => navigateToArticle(article, true)}
+        />
+
+        {/* FOLD 5: Why Prittal */}
+        <WhyPrittalTestimonials
+          onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+          onNavigate={handleGlobalNavigation}
+        />
+
+        {/* FOLD 6: Frequently Asked Questions (FAQ) */}
+        <FaqSection
+          onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+        />
+
+      </main>
+
+      <Footer
+        onOpenContact={(serviceName) => handleOpenContact(serviceName)}
+        onReplayIntro={handleReplayIntro}
+        onNavigate={handleGlobalNavigation}
+      />
+
+      <ContactDrawer
+        isOpen={isContactOpen}
+        onClose={() => setIsContactOpen(false)}
+        initialService={selectedServiceForContact}
+        isDark={isDark}
+        onNavigate={handleGlobalNavigation}
+      />
+
+      {/* Floating WhatsApp Action Button */}
+      <FloatingWhatsApp onOpenContact={handleOpenContact} />
+    </div>
+  );
+
+  if (skipIntro) {
+    return AgencyWebsiteContent;
+  }
+
+  return (
+    <LogoSplitIntro
+      key={introKey}
+      onSkipIntro={handleSkipIntro}
+    >
+      {AgencyWebsiteContent}
+    </LogoSplitIntro>
+  );
+}
