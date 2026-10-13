@@ -72,6 +72,10 @@
       "destination": "/services/events-activations/index.html"
     },
     {
+      "source": "/services/events-and-activations",
+      "destination": "/services/events-and-activations/index.html"
+    },
+    {
       "source": "/services/marketplace-growth",
       "destination": "/services/marketplace-growth/index.html"
     },

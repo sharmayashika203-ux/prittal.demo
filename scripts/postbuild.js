@@ -43,18 +43,18 @@ const routes = [
 const serviceSubpages = [
   {
     slug: 'brand-design',
-    title: 'Brand & Design Services — Prittal',
-    description: 'Logo, identity, UI, packaging — we make you look like you mean business. Visual Identity Systems, Brand Guidelines, Web & App UI/UX.'
+    title: 'Brand Identity & Design Agency | Branding Solutions - Prittal',
+    description: 'Prittal is a global brand design agency providing identity design, logo creation, and strategic positioning to build memorable brands. Get started today.'
   },
   {
     slug: 'digital-marketing',
-    title: 'Digital Marketing & Social Media Services — Prittal',
-    description: 'Strategic social media management, organic content creation, and search engine optimization built to expand audience reach.'
+    title: 'Digital Marketing & SEO Agency | Growth Solutions - Prittal',
+    description: 'Prittal drives global business growth through strategic SEO, content marketing, and performance-driven digital campaigns. Scale your brand presence now.'
   },
   {
     slug: 'performance-marketing',
-    title: 'Performance Marketing & Paid Ads Services — Prittal',
-    description: 'High-ROI Google Ads, Meta Ads, and Conversion Rate Optimization designed to scale customer acquisition.'
+    title: 'Performance Marketing & Paid Media Agency | Growth - Prittal',
+    description: 'Prittal delivers data-driven performance marketing, paid media, and growth advertising to maximize ROI and scale global businesses. Request a consultation.'
   },
   {
     slug: 'video-production',
@@ -63,13 +63,18 @@ const serviceSubpages = [
   },
   {
     slug: 'events-activations',
-    title: 'Events & On-Ground Activations — Prittal',
-    description: 'Immersive corporate events, experiential brand activations, and trade show booth design.'
+    title: 'Event Marketing & Brand Activation Agency | Prittal',
+    description: 'Prittal creates immersive corporate event experiences and brand activations that engage audiences and build brand equity worldwide. Partner with us today.'
+  },
+  {
+    slug: 'events-and-activations',
+    title: 'Event Marketing & Brand Activation Agency | Prittal',
+    description: 'Prittal creates immersive corporate event experiences and brand activations that engage audiences and build brand equity worldwide. Partner with us today.'
   },
   {
     slug: 'marketplace-growth',
-    title: 'Marketplace Growth & E-commerce Services — Prittal',
-    description: 'Amazon, Flipkart, and Shopify store optimization, listing design, and sponsored ad management.'
+    title: 'E-commerce & Marketplace Growth Agency | Prittal',
+    description: 'Prittal specializes in e-commerce branding, website design, and marketplace optimization to boost sales and listing performance worldwide. Explore solutions.'
   }
 ];
 
